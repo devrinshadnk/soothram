@@ -17,4 +17,4 @@ ALLOWED_ORIGINS = "https://devrinshadnk.github.io,http://127.0.0.1:8765,http://l
 # Secrets (set with `npx wrangler secret put NAME`, never put them in this file):
 #   ADMIN_TOKEN         - long random string, used to read leads at /leads
 #   TELEGRAM_BOT_TOKEN  - optional, to get a Telegram message for each new lead
-#   TELEGRAM_CHAT_ID    - optional, your Telegram chat id
+#   TELEGRAM_CHAT_ID    - optional; normally found automatically via POST /telegram/link
