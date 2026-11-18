@@ -95,6 +95,21 @@ h1.in .hl path{stroke-dashoffset:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .sticker text{font-family:var(--mono);font-size:10.4px;font-weight:700;letter-spacing:2.2px;fill:var(--ink);text-transform:uppercase}
 
+/* Ghat Racers feature card */
+.stack{height:auto;display:flex;align-items:flex-end;justify-content:flex-end;padding-top:40px}
+.gr{position:relative;width:min(400px,100%);background:#fff;border:1px solid var(--line-2);border-radius:22px;padding:14px;box-shadow:0 30px 60px -30px rgba(13,31,27,.4);transform:rotate(-2deg);transition:transform .6s var(--ease)}
+.gr:hover{transform:rotate(0) translateY(-6px)}
+.gr-shot{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:center 60%;border-radius:14px}
+.gr-body{padding:16px 8px 8px}
+.gr-k{color:var(--teal-d);font-weight:700}
+.gr-t{display:block;font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-.04em;line-height:1.05;margin-top:6px}
+.gr-d{color:var(--ink-2);font-size:15.5px;margin-top:8px}
+.gr .tagline{margin-top:14px}
+.chip.soon{background:#fff4d6;border-color:#f3dc9c;color:#7a5a00}
+.gr-btn{width:100%;justify-content:center;margin-top:18px}
+.gr-btn svg{width:18px;height:18px}
+.gr-btn:hover svg{transform:none}
+.stack .sticker{left:auto;right:330px;top:0}
 /* stats row */
 .stats{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin-top:72px;border-top:1px solid var(--ink)}
 .stat{padding:22px 20px 26px;border-right:1px solid var(--line)}
@@ -226,10 +241,8 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
 /* ---------- responsive ---------- */
 @media (max-width:980px){
   .hero-grid{grid-template-columns:1fr}
-  .stack{height:320px;max-width:420px}
-  .p1{right:auto;left:20px}.p2{right:20px}.p3{right:auto;left:110px;top:150px}
-  .poly{width:160px}
-  .sticker{left:auto;right:0;top:auto;bottom:0}
+  .stack{justify-content:flex-start}
+  .stack .sticker{display:none}
   .sec-head{grid-template-columns:1fr;gap:14px}
   .svc{grid-template-columns:1fr}
   .svc article{border-right:0;border-bottom:1px solid var(--line)}
@@ -259,14 +272,10 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
   .cta{flex-direction:column;gap:12px;margin-top:26px}
   .cta .btn{width:100%;justify-content:center;padding:16px 20px}
 
-  /* products as a tidy 3-up strip instead of the overlapping stack */
-  .stack{height:auto;max-width:none;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:34px}
-  .stack:hover .p1,.stack:hover .p2,.stack:hover .p3,.poly{transform:none!important}
-  .poly{position:static;width:auto;padding:7px 7px 10px;border-radius:12px}
-  .poly b{font-size:11px;margin-top:8px;line-height:1.2}
-  .poly small{font-size:9px}
-  .p1{order:2}.p2{order:1}.p3{order:3}
-  .sticker{display:none}
+  .stack{padding-top:30px;justify-content:center}
+  .gr{transform:none;width:100%;padding:12px}
+  .gr-t{font-size:26px}
+  .stack .sticker{display:none}
 
   .stats{grid-template-columns:1fr 1fr;margin-top:44px}
   .stat{padding:18px 14px 20px 0}
@@ -338,7 +347,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
   <div class="wrap bar-in">
     <a class="brand" href="#top"><span class="mark">S</span>soothram</a>
     <nav class="menu">
-      <a href="#work">Work</a><a href="#services">Services</a><a href="#ask">Start a project</a><a href="#guides">Free guides</a>
+      <a href="#services">Services</a><a href="#ask">Start a project</a><a href="#guides">Free guides</a>
     </nav>
     <button class="btn btn-ink btn-sm" data-chat>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Start a project</span></button>
@@ -355,18 +364,27 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
       <div class="cta reveal">
         <button class="btn btn-ink" data-chat>Tell me what you need
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-        <a class="btn btn-line" href="#work">See my work</a>
+        <a class="btn btn-line" href="#services">See services</a>
       </div>
     </div>
 
-    <div class="stack reveal" aria-hidden="true">
+    <div class="stack reveal">
       <div class="sticker">
         <svg class="ring" viewBox="0 0 132 132"><defs><path id="c" d="M66,66 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0"/></defs><text><textPath href="#c" textLength="320">Built with AI · Made in Kerala · </textPath></text></svg>
         <span class="core">AI</span>
       </div>
-      <div class="poly p1"><img src="assets/yard-sale.png" alt=""><b>Yard Sale Flipper</b><small>iPhone game</small></div>
-      <div class="poly p2"><img src="assets/ghat-racers.png" alt=""><b>Ghat Racers</b><small>iPhone game</small></div>
-      <div class="poly p3"><div class="ph"><svg viewBox="0 0 100 100"><path d="M10 88 C35 88 38 66 58 66 S86 48 64 40 S34 30 54 20 S80 14 92 8" fill="none" stroke="#f1ecdf" stroke-width="12" stroke-linecap="round"/><path d="M10 88 C35 88 38 66 58 66 S86 48 64 40 S34 30 54 20 S80 14 92 8" fill="none" stroke="#2b2e35" stroke-width="9" stroke-linecap="round"/><path class="dash" d="M10 88 C35 88 38 66 58 66 S86 48 64 40 S34 30 54 20 S80 14 92 8" fill="none" stroke="#ffc83d" stroke-width="1.4"/></svg></div><b>Churam Game</b><small>Free web game</small></div>
+      <div class="gr">
+        <img class="gr-shot" src="assets/ghat-racers.png" alt="Ghat Racers game icon: a bus on a winding ghat road">
+        <div class="gr-body">
+          <span class="mono gr-k">My game</span>
+          <b class="gr-t">Ghat Racers</b>
+          <p class="gr-d">Race a bus, bike or scooter up the hairpins of a monsoon ghat road.</p>
+          <div class="tagline"><span class="chip g">iPhone · Live</span><span class="chip soon">Android · Coming soon</span></div>
+          <a class="btn btn-ink gr-btn" href="https://apps.apple.com/in/app/ghat-racers/id6831315301" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.8-1-2.9-4.2zM13.9 5.4c.7-.8 1.2-2 1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.4z"/></svg>
+            Download on iPhone</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -385,7 +403,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
   </div></div></div>
 </section>
 
-<section id="work">
+<section id="work" hidden>
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="num">01 / WORK</span>
@@ -428,7 +446,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
 <section id="services" style="padding-top:0">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="num">02 / SERVICES</span>
+      <span class="num">01 / SERVICES</span>
       <div><h2>What I can <span class="t">build for you.</span></h2>
       <p>For shops, creators and businesses in Kerala and the Gulf. We can talk in Malayalam or English.</p></div>
     </div>
@@ -456,7 +474,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
   <div class="wrap">
     <div class="ask reveal">
       <div>
-        <span class="num" style="color:#5fe0c4;border-color:#5fe0c4">03 / START A PROJECT</span>
+        <span class="num" style="color:#5fe0c4;border-color:#5fe0c4">02 / START A PROJECT</span>
         <h2 style="margin-top:22px">Tell me what you need. <span class="t">Get a free plan.</span></h2>
         <p class="sub">Answer a few quick questions in the chat. It takes under a minute. Then I reply personally with a plan and a clear price, usually within a day.</p>
         <button class="btn btn-ink" data-chat>Start the chat
@@ -494,7 +512,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
     <div class="big">soothram<span class="t">.</span></div>
     <div class="foot">
       <span>© 2026 Soothram · AI developer, Kerala → UAE</span>
-      <span style="display:flex;gap:22px;flex-wrap:wrap"><a href="https://www.instagram.com/soothram.ai/" target="_blank" rel="noopener">Instagram</a><a href="#work">Work</a><a href="#services">Services</a><a href="#" data-chat>Start a project</a></span>
+      <span style="display:flex;gap:22px;flex-wrap:wrap"><a href="https://www.instagram.com/soothram.ai/" target="_blank" rel="noopener">Instagram</a><a href="#services">Services</a><a href="#" data-chat>Start a project</a></span>
     </div>
   </div>
 </footer>
@@ -554,7 +572,7 @@ window.SOOTHRAM_API = window.SOOTHRAM_API || "https://soothram-chat.devrinshadnk
 
   // floating preview image on work rows (desktop)
   const fl = $('#float');
-  const churamArt = document.querySelector('.p3 .ph').outerHTML;
+  const churamArt = (document.querySelector('.item .ph') || {}).outerHTML || '';
   if (matchMedia('(pointer:fine)').matches) document.querySelectorAll('.item').forEach(it => {
     it.addEventListener('pointerenter', () => {
       const src = it.dataset.img;
