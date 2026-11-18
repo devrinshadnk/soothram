@@ -7,9 +7,11 @@
 <meta name="description" content="Apps, games and AI tools for small businesses, built fast with AI by a developer from Kerala living in the UAE. Tell me what you need and get a free plan.">
 <meta property="og:title" content="Soothram | AI Builder">
 <meta property="og:description" content="Apps, games and AI tools, built fast. Tell me what you need and get a free plan.">
-<meta property="og:image" content="assets/logo.png">
+<meta property="og:image" content="https://devrinshadnk.github.io/soothram/assets/logo.png">
 <meta name="theme-color" content="#fcfcf9">
-<link rel="icon" href="assets/favicon.png">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.png" sizes="64x64">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -39,6 +41,9 @@ header.bar{position:sticky;top:0;z-index:40;background:rgba(252,252,249,.86);bac
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:-.02em}
 .mark{width:32px;height:32px;border-radius:9px;background:var(--ink);color:var(--mint);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:16px;transition:transform .5s var(--ease)}
 .brand:hover .mark{transform:rotate(-10deg)}
+.logo{width:34px;height:34px;border-radius:9px;display:block;transition:transform .5s var(--ease)}
+.brand:hover .logo{transform:rotate(-8deg)}
+img.av{object-fit:cover}
 .menu{display:flex;gap:28px}
 .menu a{font-weight:600;font-size:15px;color:var(--ink-2);position:relative}
 .menu a::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:2px;background:var(--teal);transform:scaleX(0);transform-origin:right;transition:transform .35s var(--ease)}
@@ -204,13 +209,13 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
 /* ---------- chat widget ---------- */
 .launcher{position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:70;display:flex;align-items:center;gap:10px;padding:12px 18px 12px 12px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:700;font-size:15px;box-shadow:0 18px 40px -14px rgba(13,31,27,.55);transition:transform .3s var(--ease),opacity .3s}
 .launcher:hover{transform:translateY(-3px)}
-.launcher .av{width:34px;height:34px;border-radius:50%;background:var(--teal);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px;position:relative}
+.launcher .av{width:34px;height:34px;border-radius:50%;display:block}
 .launcher .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#22c55e;border:2px solid var(--ink)}
 .launcher.hide{opacity:0;pointer-events:none;transform:translateY(10px)}
 .panel{position:fixed;right:22px;bottom:22px;z-index:80;width:400px;height:min(640px,calc(100svh - 44px));display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line-2);border-radius:22px;box-shadow:0 40px 80px -30px rgba(13,31,27,.5);overflow:hidden;opacity:0;pointer-events:none;transform:translateY(20px) scale(.97);transform-origin:bottom right;transition:opacity .3s,transform .4s var(--ease)}
 .panel.open{opacity:1;pointer-events:auto;transform:none}
 .p-head{display:flex;align-items:center;gap:12px;padding:16px 18px;background:var(--ink);color:var(--paper)}
-.p-head .av{width:38px;height:38px;border-radius:12px;background:var(--teal);display:grid;place-items:center;font-family:var(--display);font-weight:800}
+.p-head .av{width:38px;height:38px;border-radius:11px;display:block}
 .p-head b{display:block;font-family:var(--display);font-size:14px;font-weight:700}
 .p-head small{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#a9bbb6}
 .p-head .x{margin-left:auto;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--paper)}
@@ -345,7 +350,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
 
 <header class="bar">
   <div class="wrap bar-in">
-    <a class="brand" href="#top"><span class="mark">S</span>soothram</a>
+    <a class="brand" href="#top"><img class="logo" src="assets/logo.svg" alt="">soothram</a>
     <nav class="menu">
       <a href="#services">Services</a><a href="#ask">Start a project</a><a href="#guides">Free guides</a>
     </nav>
@@ -390,9 +395,9 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
 
   <div class="wrap">
     <div class="stats reveal">
-      <div class="stat"><b data-count="990" data-suffix="K">0</b><span>reel views in 30 days</span></div>
-      <div class="stat"><b data-count="30" data-suffix="K">0</b><span>shares in 30 days</span></div>
-      <div class="stat"><b data-count="8.4" data-dec="1" data-suffix="K">0</b><span>followers on Instagram</span></div>
+      <div class="stat"><b data-count="1" data-suffix="M+">0</b><span>views in the last 30 days</span></div>
+      <div class="stat"><b data-count="127" data-suffix="K+">0</b><span>likes, comments &amp; shares in 30 days</span></div>
+      <div class="stat"><b data-count="8.7" data-dec="1" data-suffix="K+">0</b><span>followers on Instagram</span></div>
       <div class="stat"><b data-count="3">0</b><span>products live today</span></div>
     </div>
   </div>
@@ -482,7 +487,7 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
         <p class="note">Prefer Instagram? <a href="https://ig.me/m/soothram.ai" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">DM @soothram.ai</a></p>
       </div>
       <div class="preview" id="preview" aria-hidden="true">
-        <div class="who"><span class="mark" style="background:var(--teal);color:#fff">S</span><b>Soothram</b><span class="live" style="margin-left:auto"></span></div>
+        <div class="who"><img class="logo" src="assets/logo.svg" alt=""><b>Soothram</b><span class="live" style="margin-left:auto"></span></div>
         <div class="b bot">Hi! What would you like to build?</div>
         <div class="b me">My bakery in Kochi gets too many WhatsApp orders 😅</div>
         <div class="b bot">Got it! An order assistant can help. What should I call you?</div>
@@ -520,10 +525,10 @@ footer{padding:70px 0 40px;border-top:1px solid var(--ink)}
 <div class="float" id="float" aria-hidden="true"></div>
 
 <!-- chat -->
-<button class="launcher" id="launcher" data-chat aria-label="Start a project with Soothram"><span class="av">S</span><span class="lbl">Start a project</span></button>
+<button class="launcher" id="launcher" data-chat aria-label="Start a project with Soothram"><img class="av" src="assets/logo.svg" alt=""><span class="lbl">Start a project</span></button>
 <div class="panel" id="panel" role="dialog" aria-label="Start a project with Soothram" aria-modal="false">
   <div class="p-head">
-    <span class="av">S</span>
+    <img class="av" src="assets/logo.svg" alt="">
     <div><b>Soothram</b><small><span class="live"></span>Usually replies within a day</small></div>
     <button class="x" id="close" aria-label="Close chat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
