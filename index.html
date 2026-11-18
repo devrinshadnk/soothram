@@ -593,8 +593,12 @@ window.SOOTHRAM_API = window.SOOTHRAM_API || "https://soothram-chat.devrinshadnk
   /* ---------- visit counter (free, no cookies) ---------- */
   const STATS_API = (window.SOOTHRAM_API || '').replace(/\/$/, '');
   const once = k => { try { if (sessionStorage.getItem(k)) return false; sessionStorage.setItem(k, '1'); } catch {} return true; };
+  const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+  const vid = ls.get('sth-vid') || (() => { const v = Math.random().toString(36).slice(2, 12); ls.set('sth-vid', v); return v; })();
+  const uParam = (new URLSearchParams(location.search).get('u') || '').replace(/[^\w.]/g, '').slice(0, 30);
+  if (uParam) ls.set('sth-who', '@' + uParam);
   const hit = (e, src) => { if (!STATS_API) return;
-    try { fetch(STATS_API + '/hit', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ e, src }) }); } catch {} };
+    try { fetch(STATS_API + '/hit', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ e, src, vid, who: ls.get('sth-who') }) }); } catch {} };
   const source = () => {
     const q = new URLSearchParams(location.search).get('s') || new URLSearchParams(location.search).get('utm_source');
     if (q) return q;
@@ -741,7 +745,8 @@ window.SOOTHRAM_API = window.SOOTHRAM_API || "https://soothram-chat.devrinshadnk
     if (!API) return false;
     try {
       const r = await fetch(API + '/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...lead, source: 'website-chat' }) });
+        body: JSON.stringify({ ...lead, source: 'website-chat', vid }) });
+      if (lead.name) ls.set('sth-who', String(lead.name).slice(0, 40));
       return r.ok;
     } catch { return false; }
   }

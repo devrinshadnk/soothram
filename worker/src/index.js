@@ -60,7 +60,7 @@ async function saveLead(env, raw, meta) {
   await env.LEADS.put(id, JSON.stringify(lead));
 
   await notifyTelegram(env, lead);
-  await bump(env, "lead", lead.source, lead.country).catch(() => {});
+  await bump(env, "lead", lead.source, lead.country, clip(raw.vid, 16), lead.name).catch(() => {});
   return { ok: true, id };
 }
 
@@ -115,10 +115,10 @@ async function tgLink(env) {
 const EVENTS = ["visit", "chat_open", "lead"];
 const uaeDay = (offsetDays = 0) => new Date(Date.now() + 4 * 3600_000 - offsetDays * 86400_000).toISOString().slice(0, 10);
 
-async function bump(env, event, src = "", country = "") {
+async function bump(env, event, src = "", country = "", vid = "", who = "") {
   if (!EVENTS.includes(event) || !env.STATS) return;
-  await env.STATS.prepare("INSERT INTO events (day, event, src, country, ts) VALUES (?1, ?2, ?3, ?4, ?5)")
-    .bind(uaeDay(), event, src, country, Date.now()).run();
+  await env.STATS.prepare("INSERT INTO events (day, event, src, country, ts, vid, who) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+    .bind(uaeDay(), event, src, country, Date.now(), vid, who).run();
 }
 
 async function stats(env, days) {
@@ -152,31 +152,29 @@ async function latestLeads(env, n = 5) {
   return leads.filter(Boolean);
 }
 
-async function statsText(env) {
-  const day = (o) => uaeDay(o);
+// Simple daily report: unique visitors, who they are (when known), and leads.
+async function statsText(env, offset = 0) {
+  const d = uaeDay(offset);
   const q = async (sql, ...b) => (await env.STATS.prepare(sql).bind(...b).all()).results;
-  const row = async (from, to) => (await q(
-    "SELECT SUM(event='visit') v, SUM(event='chat_open') c, SUM(event='lead') l FROM events WHERE day BETWEEN ?1 AND ?2", from, to))[0] || {};
-  const fmt = (r) => `${r.v || 0} visits · ${r.c || 0} chats · ${r.l || 0} ${r.l === 1 ? "lead" : "leads"}`;
-  const t = await row(day(0), day(0)), y = await row(day(1), day(1)), w = await row(day(6), day(0)), m = await row(day(29), day(0));
-  const src = await q("SELECT COALESCE(NULLIF(src,''),'direct') s, COUNT(*) n FROM events WHERE event='visit' AND day >= ?1 GROUP BY s ORDER BY n DESC LIMIT 5", day(6));
-  const ctry = await q("SELECT COALESCE(NULLIF(country,''),'?') c, COUNT(*) n FROM events WHERE event='visit' AND day >= ?1 GROUP BY c ORDER BY n DESC LIMIT 5", day(6));
-  const leads = await latestLeads(env, 5);
+  const uniq = (await q(
+    "SELECT COUNT(DISTINCT CASE WHEN vid <> '' THEN vid ELSE 'x' || id END) n FROM events WHERE day = ?1 AND event = 'visit'", d))[0]?.n || 0;
+  const known = (await q(
+    "SELECT who, MAX(ts) t FROM events WHERE day = ?1 AND who <> '' GROUP BY who ORDER BY t DESC LIMIT 30", d)).map((r) => r.who);
+  const leads = (await latestLeads(env, 50)).filter((l) => uaeDayOf(l.created) === d);
+  const label = offset === 0 ? "Today" : offset === 1 ? "Yesterday" : d;
   return [
-    "📊 soothram.pages.dev",
+    `📊 ${label} (${d})`,
     "",
-    `Today: ${fmt(t)}`,
-    `Yesterday: ${fmt(y)}`,
-    `Last 7 days: ${fmt(w)}`,
-    `Last 30 days: ${fmt(m)}`,
-    src.length ? `\nFrom (7 days): ${src.map((r) => `${r.s} ${r.n}`).join(", ")}` : "",
-    ctry.length ? `Countries (7 days): ${ctry.map((r) => `${r.c} ${r.n}`).join(", ")}` : "",
+    `👀 Unique visitors: ${uniq}`,
+    known.length ? `🙋 Known visitors: ${known.join(", ")}` : "🙋 Known visitors: none",
     "",
     leads.length
-      ? "👤 Latest leads:\n" + leads.map((l) => `• ${l.name} · ${l.contact} · ${l.need} (${ago(l.created)})`).join("\n")
-      : "👤 No leads yet.",
-  ].filter((x, i, a) => !(x === "" && a[i - 1] === "")).join("\n");
+      ? `🔔 Leads: ${leads.length}\n` + leads.map((l) => `• ${l.name} · ${l.contact} · ${l.need}`).join("\n")
+      : "🔔 Leads: 0",
+  ].join("\n");
 }
+
+const uaeDayOf = (iso) => new Date(new Date(iso).getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 
 async function tgSetupWebhook(env, origin) {
   if (!env.TELEGRAM_BOT_TOKEN) return { ok: false, error: "TELEGRAM_BOT_TOKEN secret is not set" };
@@ -191,7 +189,7 @@ async function tgSetupWebhook(env, origin) {
   await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setMyCommands`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ commands: [{ command: "stats", description: "Website visits, chats and leads" }] }),
+    body: JSON.stringify({ commands: [{ command: "stats", description: "Today: visitors and leads" }, { command: "yesterday", description: "Yesterday: visitors and leads" }] }),
   }).catch(() => {});
   return { ok: !!d.ok, error: d.ok ? undefined : d.description };
 }
@@ -205,10 +203,12 @@ async function tgWebhook(env, request) {
   const owner = await tgChatId(env);
   if (String(msg.chat.id) !== String(owner)) return; // only answer the owner
   const text = msg.text.trim().toLowerCase();
-  if (text.startsWith("/stats") || ["stats", "count", "show my site stats"].includes(text)) {
+  if (text.startsWith("/yesterday")) {
+    await tgSend(env, owner, await statsText(env, 1));
+  } else if (text.startsWith("/stats") || ["stats", "count", "show my site stats"].includes(text)) {
     await tgSend(env, owner, await statsText(env));
   } else {
-    await tgSend(env, owner, "Send /stats to see your website visits, chats and leads. New leads arrive here automatically.");
+    await tgSend(env, owner, "Send /stats for today or /yesterday. New leads arrive here automatically.");
   }
 }
 
@@ -218,7 +218,7 @@ export default {
   async scheduled(event, env, ctx) {
     if (!env.TELEGRAM_BOT_TOKEN || !env.STATS) return;
     const chat = await tgChatId(env);
-    if (chat) ctx.waitUntil(statsText(env).then((t) => tgSend(env, chat, "☀️ Good morning! Daily summary\n\n" + t)));
+    if (chat) ctx.waitUntil(statsText(env, 1).then((t) => tgSend(env, chat, "☀️ Good morning! Yesterday's report\n\n" + t)));
   },
 
   async fetch(request, env) {
@@ -266,7 +266,9 @@ export default {
         if (!allowed.includes(origin)) return new Response(null, { status: 204, headers: h });
         const body = await request.json().catch(() => ({}));
         const src = String(body.src || "direct").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20) || "direct";
-        await bump(env, String(body.e || ""), src, request.cf?.country || "");
+        const vid = String(body.vid || "").replace(/[^a-z0-9]/gi, "").slice(0, 16);
+        const who = clip(body.who, 40);
+        await bump(env, String(body.e || ""), src, request.cf?.country || "", vid, who);
         return new Response(null, { status: 204, headers: h });
       }
 
