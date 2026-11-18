@@ -1,0 +1,20 @@
+name = "soothram-chat"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Leads are stored here. Create it once with:
+#   npx wrangler kv namespace create LEADS
+# then paste the id below.
+[[kv_namespaces]]
+binding = "LEADS"
+id = "8795fcd4cf444df1ada85660305c74e9"
+
+[vars]
+# Comma-separated list of sites allowed to call this API
+ALLOWED_ORIGINS = "https://devrinshadnk.github.io,http://127.0.0.1:8765,http://localhost:8765"
+
+# Secrets (set with `npx wrangler secret put NAME`, never put them in this file):
+#   ADMIN_TOKEN         - long random string, used to read leads at /leads
+#   TELEGRAM_BOT_TOKEN  - optional, to get a Telegram message for each new lead
+#   TELEGRAM_CHAT_ID    - optional, your Telegram chat id
