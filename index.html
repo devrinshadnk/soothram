@@ -590,6 +590,24 @@ window.SOOTHRAM_API = window.SOOTHRAM_API || "https://soothram-chat.devrinshadnk
     it.addEventListener('pointerleave', () => fl.classList.remove('on'));
   });
 
+  /* ---------- visit counter (free, no cookies) ---------- */
+  const STATS_API = (window.SOOTHRAM_API || '').replace(/\/$/, '');
+  const once = k => { try { if (sessionStorage.getItem(k)) return false; sessionStorage.setItem(k, '1'); } catch {} return true; };
+  const hit = (e, src) => { if (!STATS_API) return;
+    try { fetch(STATS_API + '/hit', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ e, src }) }); } catch {} };
+  const source = () => {
+    const q = new URLSearchParams(location.search).get('s') || new URLSearchParams(location.search).get('utm_source');
+    if (q) return q;
+    const r = document.referrer || '', ua = navigator.userAgent || '';
+    if (/Instagram/i.test(ua) || /instagram\./i.test(r)) return 'instagram';
+    if (/FBAN|FBAV/i.test(ua) || /facebook\./i.test(r)) return 'facebook';
+    if (/whatsapp/i.test(r)) return 'whatsapp';
+    if (/google\./i.test(r)) return 'google';
+    if (r && !r.includes(location.host)) return 'other';
+    return 'direct';
+  };
+  if (once('sth-visit')) hit('visit', source());
+
   /* ---------- guided chat (no AI, free) ---------- */
   const API = (window.SOOTHRAM_API || '').replace(/\/$/, '');
   const panel = $('#panel'), log = $('#log'), chips = $('#chips'), input = $('#input'), send = $('#send'), launcher = $('#launcher');
@@ -682,6 +700,7 @@ window.SOOTHRAM_API = window.SOOTHRAM_API || "https://soothram-chat.devrinshadnk
 
   function open() {
     panel.classList.add('open'); launcher.classList.add('hide');
+    if (once('sth-chat-open')) hit('chat_open');
     if (!log.children.length) {
       if (state.view.length) { state.view.forEach(([r, t]) => addMsg(r, t, false)); setChips(STEPS[state.step].chips); }
       else ask('need');

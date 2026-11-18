@@ -60,6 +60,7 @@ async function saveLead(env, raw, meta) {
   await env.LEADS.put(id, JSON.stringify(lead));
 
   await notifyTelegram(env, lead);
+  await bump(env, "lead", lead.source, lead.country).catch(() => {});
   return { ok: true, id };
 }
 
@@ -110,6 +111,34 @@ async function tgLink(env) {
   return { ok: sent, chat: last.chat.first_name || last.chat.title || "", error: sent ? undefined : "Could not send the test message" };
 }
 
+// ---------- visit stats (D1: exact counts) ----------
+const EVENTS = ["visit", "chat_open", "lead"];
+const uaeDay = (offsetDays = 0) => new Date(Date.now() + 4 * 3600_000 - offsetDays * 86400_000).toISOString().slice(0, 10);
+
+async function bump(env, event, src = "", country = "") {
+  if (!EVENTS.includes(event) || !env.STATS) return;
+  await env.STATS.prepare("INSERT INTO events (day, event, src, country, ts) VALUES (?1, ?2, ?3, ?4, ?5)")
+    .bind(uaeDay(), event, src, country, Date.now()).run();
+}
+
+async function stats(env, days) {
+  const from = uaeDay(days - 1);
+  const daily = await env.STATS.prepare(
+    "SELECT day, SUM(event='visit') AS visit, SUM(event='chat_open') AS chat_open, SUM(event='lead') AS lead FROM events WHERE day >= ?1 GROUP BY day ORDER BY day DESC").bind(from).all();
+  const sources = await env.STATS.prepare(
+    "SELECT src, COUNT(*) AS n FROM events WHERE event='visit' AND day >= ?1 GROUP BY src ORDER BY n DESC").bind(from).all();
+  const countries = await env.STATS.prepare(
+    "SELECT country, COUNT(*) AS n FROM events WHERE event='visit' AND day >= ?1 GROUP BY country ORDER BY n DESC LIMIT 10").bind(from).all();
+  const totals = { visit: 0, chat_open: 0, lead: 0 };
+  for (const r of daily.results) for (const e of EVENTS) totals[e] += r[e] || 0;
+  return {
+    days, totals,
+    sources: Object.fromEntries(sources.results.map((r) => [r.src || "direct", r.n])),
+    countries: Object.fromEntries(countries.results.map((r) => [r.country || "?", r.n])),
+    daily: daily.results,
+  };
+}
+
 // ---------- router ----------
 export default {
   async fetch(request, env) {
@@ -150,6 +179,22 @@ export default {
         if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "unauthorized" }, 401, h);
         const r = await tgLink(env);
         return json(r, r.ok ? 200 : 400, h);
+      }
+
+      if (url.pathname === "/hit" && request.method === "POST") {
+        const allowed = (env.ALLOWED_ORIGINS || "").split(",").map((x) => x.trim());
+        if (!allowed.includes(origin)) return new Response(null, { status: 204, headers: h });
+        const body = await request.json().catch(() => ({}));
+        const src = String(body.src || "direct").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20) || "direct";
+        await bump(env, String(body.e || ""), src, request.cf?.country || "");
+        return new Response(null, { status: 204, headers: h });
+      }
+
+      if (url.pathname === "/stats" && request.method === "GET") {
+        const auth = request.headers.get("Authorization") || "";
+        if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "unauthorized" }, 401, h);
+        const days = Math.min(Math.max(parseInt(url.searchParams.get("days") || "7", 10) || 7, 1), 60);
+        return json(await stats(env, days), 200, h);
       }
 
       if (url.pathname === "/") return json({ ok: true, service: "soothram-chat" }, 200, h);
