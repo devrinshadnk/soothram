@@ -24,3 +24,7 @@ ALLOWED_ORIGINS = "https://soothram.pages.dev,https://devrinshadnk.github.io,htt
 binding = "STATS"
 database_name = "soothram-stats"
 database_id = "11eaef99-4425-4d47-ac15-dd945f10e5f9"
+
+# Daily Telegram summary at 8:30 AM UAE time (04:30 UTC)
+[triggers]
+crons = ["30 4 * * *"]

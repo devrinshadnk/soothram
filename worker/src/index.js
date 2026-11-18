@@ -139,8 +139,88 @@ async function stats(env, days) {
   };
 }
 
+// ---------- telegram stats bot ----------
+function ago(iso) {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400_000);
+  return d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+}
+
+async function latestLeads(env, n = 5) {
+  const list = await env.LEADS.list({ prefix: "lead:", limit: 1000 });
+  const keys = list.keys.map((k) => k.name).sort().slice(-n).reverse();
+  const leads = await Promise.all(keys.map(async (k) => JSON.parse((await env.LEADS.get(k)) || "null")));
+  return leads.filter(Boolean);
+}
+
+async function statsText(env) {
+  const day = (o) => uaeDay(o);
+  const q = async (sql, ...b) => (await env.STATS.prepare(sql).bind(...b).all()).results;
+  const row = async (from, to) => (await q(
+    "SELECT SUM(event='visit') v, SUM(event='chat_open') c, SUM(event='lead') l FROM events WHERE day BETWEEN ?1 AND ?2", from, to))[0] || {};
+  const fmt = (r) => `${r.v || 0} visits · ${r.c || 0} chats · ${r.l || 0} ${r.l === 1 ? "lead" : "leads"}`;
+  const t = await row(day(0), day(0)), y = await row(day(1), day(1)), w = await row(day(6), day(0)), m = await row(day(29), day(0));
+  const src = await q("SELECT COALESCE(NULLIF(src,''),'direct') s, COUNT(*) n FROM events WHERE event='visit' AND day >= ?1 GROUP BY s ORDER BY n DESC LIMIT 5", day(6));
+  const ctry = await q("SELECT COALESCE(NULLIF(country,''),'?') c, COUNT(*) n FROM events WHERE event='visit' AND day >= ?1 GROUP BY c ORDER BY n DESC LIMIT 5", day(6));
+  const leads = await latestLeads(env, 5);
+  return [
+    "📊 soothram.pages.dev",
+    "",
+    `Today: ${fmt(t)}`,
+    `Yesterday: ${fmt(y)}`,
+    `Last 7 days: ${fmt(w)}`,
+    `Last 30 days: ${fmt(m)}`,
+    src.length ? `\nFrom (7 days): ${src.map((r) => `${r.s} ${r.n}`).join(", ")}` : "",
+    ctry.length ? `Countries (7 days): ${ctry.map((r) => `${r.c} ${r.n}`).join(", ")}` : "",
+    "",
+    leads.length
+      ? "👤 Latest leads:\n" + leads.map((l) => `• ${l.name} · ${l.contact} · ${l.need} (${ago(l.created)})`).join("\n")
+      : "👤 No leads yet.",
+  ].filter((x, i, a) => !(x === "" && a[i - 1] === "")).join("\n");
+}
+
+async function tgSetupWebhook(env, origin) {
+  if (!env.TELEGRAM_BOT_TOKEN) return { ok: false, error: "TELEGRAM_BOT_TOKEN secret is not set" };
+  const secret = crypto.randomUUID().replace(/-/g, "");
+  await env.LEADS.put("cfg:tg_secret", secret);
+  const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setWebhook`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: `${origin}/telegram/webhook`, secret_token: secret, allowed_updates: ["message"] }),
+  });
+  const d = await r.json().catch(() => ({}));
+  await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/setMyCommands`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ commands: [{ command: "stats", description: "Website visits, chats and leads" }] }),
+  }).catch(() => {});
+  return { ok: !!d.ok, error: d.ok ? undefined : d.description };
+}
+
+async function tgWebhook(env, request) {
+  const secret = await env.LEADS.get("cfg:tg_secret");
+  if (!secret || request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== secret) return;
+  const upd = await request.json().catch(() => ({}));
+  const msg = upd.message;
+  if (!msg || !msg.text) return;
+  const owner = await tgChatId(env);
+  if (String(msg.chat.id) !== String(owner)) return; // only answer the owner
+  const text = msg.text.trim().toLowerCase();
+  if (text.startsWith("/stats") || ["stats", "count", "show my site stats"].includes(text)) {
+    await tgSend(env, owner, await statsText(env));
+  } else {
+    await tgSend(env, owner, "Send /stats to see your website visits, chats and leads. New leads arrive here automatically.");
+  }
+}
+
 // ---------- router ----------
 export default {
+  // Daily summary to Telegram (cron in wrangler.toml)
+  async scheduled(event, env, ctx) {
+    if (!env.TELEGRAM_BOT_TOKEN || !env.STATS) return;
+    const chat = await tgChatId(env);
+    if (chat) ctx.waitUntil(statsText(env).then((t) => tgSend(env, chat, "☀️ Good morning! Daily summary\n\n" + t)));
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") || "";
@@ -195,6 +275,26 @@ export default {
         if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "unauthorized" }, 401, h);
         const days = Math.min(Math.max(parseInt(url.searchParams.get("days") || "7", 10) || 7, 1), 60);
         return json(await stats(env, days), 200, h);
+      }
+
+      if (url.pathname === "/telegram/webhook" && request.method === "POST") {
+        await tgWebhook(env, request);
+        return new Response("ok", { status: 200 });
+      }
+
+      if (url.pathname === "/telegram/setup" && request.method === "POST") {
+        const auth = request.headers.get("Authorization") || "";
+        if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "unauthorized" }, 401, h);
+        const r = await tgSetupWebhook(env, url.origin);
+        return json(r, r.ok ? 200 : 400, h);
+      }
+
+      if (url.pathname === "/telegram/stats-now" && request.method === "POST") {
+        const auth = request.headers.get("Authorization") || "";
+        if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) return json({ error: "unauthorized" }, 401, h);
+        const chat = await tgChatId(env);
+        const ok = chat ? await tgSend(env, chat, await statsText(env)) : false;
+        return json({ ok }, ok ? 200 : 400, h);
       }
 
       if (url.pathname === "/") return json({ ok: true, service: "soothram-chat" }, 200, h);
