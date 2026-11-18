@@ -115,11 +115,19 @@ async function tgLink(env) {
 const EVENTS = ["visit", "chat_open", "lead"];
 const uaeDay = (offsetDays = 0) => new Date(Date.now() + 4 * 3600_000 - offsetDays * 86400_000).toISOString().slice(0, 10);
 
-async function bump(env, event, src = "", country = "", vid = "", who = "") {
+async function bump(env, event, src = "", country = "", vid = "", who = "", bot = 0, asn = 0) {
   if (!EVENTS.includes(event) || !env.STATS) return;
-  await env.STATS.prepare("INSERT INTO events (day, event, src, country, ts, vid, who) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
-    .bind(uaeDay(), event, src, country, Date.now(), vid, who).run();
+  await env.STATS.prepare("INSERT INTO events (day, event, src, country, ts, vid, who, bot, asn) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)")
+    .bind(uaeDay(), event, src, country, Date.now(), vid, who, bot, asn).run();
 }
+
+// Robots: link checkers (Meta scans every link sent in a DM), crawlers, headless browsers.
+const BOT_UA = /bot|crawl|spider|slurp|facebookexternalhit|meta-external|facebot|headless|lighthouse|preview|python|curl|wget|phantom|puppeteer|playwright|selenium/i;
+// Data-centre networks real phones don't use: Meta, Google, Amazon, Microsoft, DigitalOcean,
+// Hetzner, OVH, Linode, Vultr, Cloudflare, Oracle, Alibaba, Tencent
+const BOT_ASN = new Set([32934, 63293, 15169, 396982, 19527, 16509, 14618, 8075, 14061, 24940, 16276, 63949, 20473, 13335, 31898, 45102, 132203]);
+const isBot = (request, vid) =>
+  !vid || BOT_UA.test(request.headers.get("User-Agent") || "") || BOT_ASN.has(Number(request.cf?.asn || 0));
 
 async function stats(env, days) {
   const from = uaeDay(days - 1);
@@ -157,9 +165,9 @@ async function statsText(env, offset = 0) {
   const d = uaeDay(offset);
   const q = async (sql, ...b) => (await env.STATS.prepare(sql).bind(...b).all()).results;
   const uniq = (await q(
-    "SELECT COUNT(DISTINCT CASE WHEN vid <> '' THEN vid ELSE 'x' || id END) n FROM events WHERE day = ?1 AND event = 'visit'", d))[0]?.n || 0;
+    "SELECT COUNT(DISTINCT CASE WHEN vid <> '' THEN vid ELSE 'x' || id END) n FROM events WHERE day = ?1 AND event = 'visit' AND bot = 0", d))[0]?.n || 0;
   const known = (await q(
-    "SELECT who, MAX(ts) t FROM events WHERE day = ?1 AND who <> '' GROUP BY who ORDER BY t DESC LIMIT 30", d)).map((r) => r.who);
+    "SELECT who, MAX(ts) t FROM events WHERE day = ?1 AND who <> '' AND bot = 0 GROUP BY who ORDER BY t DESC LIMIT 30", d)).map((r) => r.who);
   const leads = (await latestLeads(env, 50)).filter((l) => uaeDayOf(l.created) === d);
   const label = offset === 0 ? "Today" : offset === 1 ? "Yesterday" : d;
   return [
@@ -268,7 +276,8 @@ export default {
         const src = String(body.src || "direct").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 20) || "direct";
         const vid = String(body.vid || "").replace(/[^a-z0-9]/gi, "").slice(0, 16);
         const who = clip(body.who, 40);
-        await bump(env, String(body.e || ""), src, request.cf?.country || "", vid, who);
+        await bump(env, String(body.e || ""), src, request.cf?.country || "", vid, who,
+          isBot(request, vid) ? 1 : 0, Number(request.cf?.asn || 0));
         return new Response(null, { status: 204, headers: h });
       }
 
